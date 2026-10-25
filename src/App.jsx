@@ -63,8 +63,8 @@ export default function App() {
   const [fileName, setFileName] = useState("");
 
   const getDefaultRoadmap = () => [
-    { id: 1, title: "HTML, CSS & Modern Tailwind", completed: true },
-    { id: 2, title: "JavaScript ES6+ & TypeScript Basics", completed: true },
+    { id: 1, title: "HTML, CSS & Modern Tailwind", completed: false },
+    { id: 2, title: "JavaScript ES6+ & TypeScript Basics", completed: false },
     { id: 3, title: "React.js & State Management", completed: false },
     { id: 4, title: "Backend API (Node.js/Express or Python)", completed: false },
     { id: 5, title: "Database (Supabase / PostgreSQL)", completed: false },
@@ -598,7 +598,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
       setRoadmapFileName(file.name);
       setCustomGoal(`Roadmap based on ${file.name}`);
       const uploadedSteps = [
-        { id: 1, title: `${file.name}: Module 1 - Core Foundations`, completed: true },
+        { id: 1, title: `${file.name}: Module 1 - Core Foundations`, completed: false },
         { id: 2, title: `${file.name}: Module 2 - Advanced Architecture`, completed: false },
         { id: 3, title: `${file.name}: Module 3 - Practical Case Study`, completed: false },
         { id: 4, title: `${file.name}: Module 4 - Final Project`, completed: false }
@@ -613,7 +613,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
     const target = customGoal.trim() || roadmapRole;
 
     const generated = [
-      { id: 1, title: `${target}: Basics & Core Syntax`, completed: true },
+      { id: 1, title: `${target}: Basics & Core Syntax`, completed: false },
       { id: 2, title: `Data Structures & Essential Problem Solving`, completed: false },
       { id: 3, title: `Frameworks & Production Tooling for ${target}`, completed: false },
       { id: 4, title: `API Integration, State & Database Ops`, completed: false },
