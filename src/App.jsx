@@ -36,7 +36,7 @@ export default function App() {
       id: 1,
       title: "New Chat",
       messages: [
-        { sender: "ai", text: "Hello! I am your CognitivePath AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations. I will explain everything in clear, structured steps." }
+        { sender: "ai", text: "Hello! I am your SynapseAura AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations. I will explain everything in clear, structured steps." }
       ]
     }
   ]);
@@ -76,17 +76,17 @@ export default function App() {
       id: 1,
       title: "New Chat",
       messages: [
-        { sender: "ai", text: "Hello! I am your CognitivePath AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations. I will explain everything in clear, structured steps." }
+        { sender: "ai", text: "Hello! I am your SynapseAura AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations. I will explain everything in clear, structured steps." }
       ]
     }
   ];
 
   const loadUserDataForEmail = (email) => {
-    const rawData = localStorage.getItem(`cognitivepath_data_${email.toLowerCase()}`);
+    const rawData = localStorage.getItem(`synapseaura_data_${email.toLowerCase()}`);
 
     const todayStr = new Date().toISOString().slice(0, 10);
-    const lastActiveKey = `cognitivepath_last_active_${email.toLowerCase()}`;
-    const streakKey = `cognitivepath_streak_${email.toLowerCase()}`;
+    const lastActiveKey = `synapseaura_last_active_${email.toLowerCase()}`;
+    const streakKey = `synapseaura_streak_${email.toLowerCase()}`;
     const lastActiveStr = localStorage.getItem(lastActiveKey);
     let calculatedStreak = parseInt(localStorage.getItem(streakKey) || "1", 10);
 
@@ -140,7 +140,7 @@ export default function App() {
 
   const syncCurrentUserData = (overrides = {}) => {
     if (!user?.email) return;
-    const emailKey = `cognitivepath_data_${user.email.toLowerCase()}`;
+    const emailKey = `synapseaura_data_${user.email.toLowerCase()}`;
     const payload = {
       notesList,
       searchHistory,
@@ -154,7 +154,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("cognitivepath_user");
+    const savedUser = localStorage.getItem("synapseaura_user");
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
@@ -179,7 +179,7 @@ export default function App() {
     };
 
     setUser(userData);
-    localStorage.setItem("cognitivepath_user", JSON.stringify(userData));
+    localStorage.setItem("synapseaura_user", JSON.stringify(userData));
     loadUserDataForEmail(userData.email);
   };
 
@@ -188,7 +188,7 @@ export default function App() {
       syncCurrentUserData();
     }
     setUser(null);
-    localStorage.removeItem("cognitivepath_user");
+    localStorage.removeItem("synapseaura_user");
     setActiveTab("home");
   };
 
@@ -200,7 +200,7 @@ export default function App() {
       id: Date.now(),
       title: "New Chat",
       messages: [
-        { sender: "ai", text: "Hello! I am your CognitivePath AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations." }
+        { sender: "ai", text: "Hello! I am your SynapseAura AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations." }
       ]
     };
     const updatedChats = [newChatObj, ...mentorChats];
@@ -215,7 +215,7 @@ export default function App() {
 
   const handleDeleteChat = (e, id) => {
     e.stopPropagation();
-    if (mentorChats.length <= 1) return; // keep at least one chat
+    if (mentorChats.length <= 1) return;
     const updatedChats = mentorChats.filter(c => c.id !== id);
     setMentorChats(updatedChats);
     if (activeChatId === id) {
@@ -261,7 +261,6 @@ export default function App() {
     const tempUserMsg = { sender: "user", text: userText || `[Attached: ${mentorFileName}]` };
     const withUserMessages = [...chatMessages, tempUserMsg];
 
-    // Update title if first message
     const chatTitle = currentChat.title === "New Chat" && userText ? userText.slice(0, 24) + "..." : currentChat.title;
 
     const withPendingAi = [
@@ -287,7 +286,7 @@ export default function App() {
     syncCurrentUserData({ searchHistory: updatedHistory, mentorChats: updatedChatsWithPending });
 
     try {
-      const systemInstruction = `You are CognitivePath AI, an expert school and college teacher.
+      const systemInstruction = `You are SynapseAura AI, an expert school and college teacher.
 STRICT RESPONSE RULES:
 1. Always respond strictly in clear, natural English.
 2. NEVER wrap theoretical, academic, or mathematical solutions inside code blocks (do NOT use triple backticks or single backticks).
@@ -331,7 +330,7 @@ STRICT RESPONSE RULES:
             headers: {
               "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
               "HTTP-Referer": window.location.origin || "http://localhost:5173",
-              "X-Title": "CognitivePath AI",
+              "X-Title": "SynapseAura",
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -459,7 +458,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
             headers: {
               "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
               "HTTP-Referer": window.location.origin || "http://localhost:5173",
-              "X-Title": "CognitivePath AI",
+              "X-Title": "SynapseAura",
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -733,7 +732,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
             <Sparkles className="w-3.5 h-3.5" /> Next-Gen EdTech Platform
           </div>
           <h1 className="text-5xl font-extrabold tracking-tight leading-tight">
-            Learn & Excel with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">CognitivePath AI</span>
+            Learn & Excel with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">SynapseAura</span>
           </h1>
           <p className="text-base text-slate-300 leading-relaxed">
             Class 1 to PG comprehensive notes, live web search extraction, code assistant, AI mentor tutor, career roadmaps, and ATS resume scanner.
@@ -745,7 +744,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
             <div className="inline-flex p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mb-3">
               <Code2 className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight text-white">CognitivePath AI</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-white">SynapseAura</h2>
             <p className="text-slate-400 text-sm mt-1">
               {authMode === "login" ? "Sign in to your account" : "Create a new account and get started"}
             </p>
@@ -899,7 +898,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
                 <Code2 className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="font-bold tracking-tight text-white leading-tight">CognitivePath</h2>
+                <h2 className="font-bold tracking-tight text-white leading-tight">SynapseAura</h2>
                 <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">EdTech AI</span>
               </div>
             </div>
@@ -916,7 +915,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
             {[
               { id: "home", label: "Home Dashboard", icon: Sparkles },
               { id: "notes", label: "Class 1 to PG Notes", icon: BookOpen },
-              { id: "quickcoder", label: "Cognitive Coder", icon: Terminal },
+              { id: "quickcoder", label: "Synapse Coder", icon: Terminal },
               { id: "mentor", label: "AI Mentor", icon: Bot },
               { id: "roadmap", label: "Roadmap Maker", icon: Compass },
               { id: "resume", label: "Resume Analyser", icon: FileText },
@@ -988,7 +987,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
                 <h1 className="text-xl md:text-2xl font-bold text-white capitalize">
                   {activeTab === "home" ? "Welcome back, " + user.name : activeTab === "notes" ? "Class 1 to PG Study Notes" : activeTab.replace("-", " ")}
                 </h1>
-                <p className="text-sm text-slate-400">CognitivePath Intelligent Educational Ecosystem</p>
+                <p className="text-sm text-slate-400">SynapseAura Intelligent Educational Ecosystem</p>
               </div>
             </div>
           </header>
@@ -1034,7 +1033,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
                   <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl w-fit mb-3">
                     <Terminal className="w-5 h-5" />
                   </div>
-                  <h4 className="font-semibold text-white">Cognitive Coder</h4>
+                  <h4 className="font-semibold text-white">Synapse Coder</h4>
                   <p className="text-xs text-slate-400 mt-1">Multi-language code generator and direct file editing support.</p>
                 </div>
 
@@ -1723,7 +1722,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
 
         <footer className="relative z-10 pt-8 pb-2 text-center border-t border-slate-800/80 mt-12 text-xs text-slate-500">
           <p>
-            CognitivePath AI Ecosystem • Designed & Developed with passion by{" "}
+            SynapseAura AI Ecosystem • Designed & Developed with passion by{" "}
             <span className="text-indigo-400 font-semibold">Madhav Vashistha</span>
           </p>
         </footer>
