@@ -4,7 +4,7 @@ import {
   BarChart3, LogOut, Sparkles, CheckCircle2, ChevronRight,
   User, Lock, Mail, ArrowRight, Copy, Check,
   Send, Upload, Award, AlertCircle, RefreshCw,
-  Menu, X, Paperclip, FileCode, FileUp, BookOpen, GraduationCap, Trash2, Flame
+  Menu, X, Paperclip, FileCode, FileUp, BookOpen, GraduationCap, Trash2, Flame, Plus
 } from "lucide-react";
 
 export default function App() {
@@ -28,8 +28,19 @@ export default function App() {
   const [searchHistory, setSearchHistory] = useState([]);
   const [notesList, setNotesList] = useState([]);
   const [roadmapSteps, setRoadmapSteps] = useState([]);
-  const [chatMessages, setChatMessages] = useState([]);
   const [analysisResult, setAnalysisResult] = useState(null);
+
+  // --- MULTI-CHAT STATES (AI Mentor History) ---
+  const [mentorChats, setMentorChats] = useState([
+    {
+      id: 1,
+      title: "New Chat",
+      messages: [
+        { sender: "ai", text: "Hello! I am your CognitivePath AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations. I will explain everything in clear, structured steps." }
+      ]
+    }
+  ]);
+  const [activeChatId, setActiveChatId] = useState(1);
 
   const [selectedGrade, setSelectedGrade] = useState("Class 10");
   const [selectedSubject, setSelectedSubject] = useState("Science / EVS");
@@ -61,7 +72,13 @@ export default function App() {
   ];
 
   const getDefaultChat = () => [
-    { sender: "ai", text: "Hello! I am your CognitivePath AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations. I will explain everything in clear, structured steps." }
+    {
+      id: 1,
+      title: "New Chat",
+      messages: [
+        { sender: "ai", text: "Hello! I am your CognitivePath AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations. I will explain everything in clear, structured steps." }
+      ]
+    }
   ];
 
   const loadUserDataForEmail = (email) => {
@@ -99,7 +116,13 @@ export default function App() {
         setNotesList(parsed.notesList || []);
         setSearchHistory(parsed.searchHistory || []);
         setRoadmapSteps(parsed.roadmapSteps || getDefaultRoadmap());
-        setChatMessages(parsed.chatMessages || getDefaultChat());
+        if (parsed.mentorChats && parsed.mentorChats.length > 0) {
+          setMentorChats(parsed.mentorChats);
+          setActiveChatId(parsed.mentorChats[0].id);
+        } else {
+          setMentorChats(getDefaultChat());
+          setActiveChatId(1);
+        }
         setAnalysisResult(parsed.analysisResult || null);
         return;
       } catch (err) {
@@ -110,7 +133,8 @@ export default function App() {
     setNotesList([]);
     setSearchHistory([]);
     setRoadmapSteps(getDefaultRoadmap());
-    setChatMessages(getDefaultChat());
+    setMentorChats(getDefaultChat());
+    setActiveChatId(1);
     setAnalysisResult(null);
   };
 
@@ -121,7 +145,7 @@ export default function App() {
       notesList,
       searchHistory,
       roadmapSteps,
-      chatMessages,
+      mentorChats,
       analysisResult,
       dailyStreak,
       ...overrides
@@ -137,6 +161,9 @@ export default function App() {
       loadUserDataForEmail(parsedUser.email);
     }
   }, []);
+
+  const currentChat = mentorChats.find(c => c.id === activeChatId) || mentorChats[0];
+  const chatMessages = currentChat ? currentChat.messages : [];
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -167,6 +194,36 @@ export default function App() {
 
   const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
+  // --- NEW CHAT HANDLER ---
+  const handleNewChat = () => {
+    const newChatObj = {
+      id: Date.now(),
+      title: "New Chat",
+      messages: [
+        { sender: "ai", text: "Hello! I am your CognitivePath AI Teacher & Mentor. You can ask any academic or technical doubts, upload question images, or request mathematical derivations." }
+      ]
+    };
+    const updatedChats = [newChatObj, ...mentorChats];
+    setMentorChats(updatedChats);
+    setActiveChatId(newChatObj.id);
+    syncCurrentUserData({ mentorChats: updatedChats });
+  };
+
+  const handleSelectChat = (id) => {
+    setActiveChatId(id);
+  };
+
+  const handleDeleteChat = (e, id) => {
+    e.stopPropagation();
+    if (mentorChats.length <= 1) return; // keep at least one chat
+    const updatedChats = mentorChats.filter(c => c.id !== id);
+    setMentorChats(updatedChats);
+    if (activeChatId === id) {
+      setActiveChatId(updatedChats[0].id);
+    }
+    syncCurrentUserData({ mentorChats: updatedChats });
+  };
+
   const handleMentorFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -178,13 +235,21 @@ export default function App() {
       };
       reader.readAsDataURL(file);
 
-      const updatedChat = [
+      const updatedMessages = [
         ...chatMessages, 
         { sender: "user", text: `Attached file: ${file.name}` },
         { sender: "ai", text: `I have received the file "${file.name}". Please ask your specific question or let me know what you would like me to explain.` }
       ];
-      setChatMessages(updatedChat);
-      syncCurrentUserData({ chatMessages: updatedChat });
+
+      const updatedChats = mentorChats.map(chat => {
+        if (chat.id === activeChatId) {
+          return { ...chat, messages: updatedMessages };
+        }
+        return chat;
+      });
+
+      setMentorChats(updatedChats);
+      syncCurrentUserData({ mentorChats: updatedChats });
     }
   };
 
@@ -193,21 +258,33 @@ export default function App() {
     if (!mentorInput.trim() && !mentorFileBase64) return;
 
     const userText = mentorInput.trim();
-    const updatedMessages = [...chatMessages, { sender: "user", text: userText || `[Attached: ${mentorFileName}]` }];
-    setChatMessages(updatedMessages);
-    setMentorInput("");
+    const tempUserMsg = { sender: "user", text: userText || `[Attached: ${mentorFileName}]` };
+    const withUserMessages = [...chatMessages, tempUserMsg];
 
-    setChatMessages((prev) => [
-      ...prev,
+    // Update title if first message
+    const chatTitle = currentChat.title === "New Chat" && userText ? userText.slice(0, 24) + "..." : currentChat.title;
+
+    const withPendingAi = [
+      ...withUserMessages,
       { sender: "ai", text: "AI Teacher is analyzing and preparing a clear step-by-step solution..." }
-    ]);
+    ];
+
+    const updatedChatsWithPending = mentorChats.map(chat => {
+      if (chat.id === activeChatId) {
+        return { ...chat, title: chatTitle, messages: withPendingAi };
+      }
+      return chat;
+    });
+
+    setMentorChats(updatedChatsWithPending);
+    setMentorInput("");
 
     const updatedHistory = [
       { id: Date.now(), type: "AI Mentor", query: userText || mentorFileName, time: "Just now" },
       ...searchHistory
     ];
     setSearchHistory(updatedHistory);
-    syncCurrentUserData({ searchHistory: updatedHistory });
+    syncCurrentUserData({ searchHistory: updatedHistory, mentorChats: updatedChatsWithPending });
 
     try {
       const systemInstruction = `You are CognitivePath AI, an expert school and college teacher.
@@ -231,7 +308,7 @@ STRICT RESPONSE RULES:
 
       const formattedMessages = [
         { role: "system", content: systemInstruction },
-        ...updatedMessages.slice(-6).map((m) => ({
+        ...withUserMessages.slice(-6).map((m) => ({
           role: m.sender === "user" ? "user" : "assistant",
           content: m.text
         }))
@@ -286,27 +363,39 @@ STRICT RESPONSE RULES:
       setMentorFileName("");
 
       const finalMessages = [
-        ...updatedMessages,
+        ...withUserMessages,
         { sender: "ai", text: cleanOutput }
       ];
 
-      setChatMessages(finalMessages);
-      syncCurrentUserData({ chatMessages: finalMessages });
+      const finalChats = mentorChats.map(chat => {
+        if (chat.id === activeChatId) {
+          return { ...chat, title: chatTitle, messages: finalMessages };
+        }
+        return chat;
+      });
+
+      setMentorChats(finalChats);
+      syncCurrentUserData({ mentorChats: finalChats });
     } catch (err) {
       console.error("OpenRouter API Error:", err);
       const errorMessages = [
-        ...updatedMessages,
+        ...withUserMessages,
         {
           sender: "ai",
           text: "Connection issue encountered. Please verify your internet connection."
         }
       ];
-      setChatMessages(errorMessages);
-      syncCurrentUserData({ chatMessages: errorMessages });
+      const errorChats = mentorChats.map(chat => {
+        if (chat.id === activeChatId) {
+          return { ...chat, messages: errorMessages };
+        }
+        return chat;
+      });
+      setMentorChats(errorChats);
+      syncCurrentUserData({ mentorChats: errorChats });
     }
   };
 
-  // 4-5 PAGES ULTRA DETAILED AI STUDY NOTES GENERATOR
   const handleGenerateNotes = async (e) => {
     e.preventDefault();
     if (!customNoteQuery.trim()) return;
@@ -1171,99 +1260,146 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
             </div>
           )}
 
+          {/* --- AI MENTOR WITH CHAT HISTORY SIDEBAR & NEW CHAT --- */}
           {activeTab === "mentor" && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col h-[650px] overflow-hidden shadow-xl">
-              <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">
-                    <Bot className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">Cognitive AI Mentor</h3>
-                    <p className="text-xs text-emerald-400 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span> Multi-modal Active • Clear English Output
-                    </p>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[680px]">
+              {/* Chat History Sidebar */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between lg:col-span-1 shadow-xl">
+                <div>
+                  <button
+                    onClick={handleNewChat}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 mb-4 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" /> New Chat
+                  </button>
+
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">Chat History</p>
+                  
+                  <div className="space-y-1.5 overflow-y-auto max-h-[480px] pr-1">
+                    {mentorChats.map((chat) => (
+                      <div
+                        key={chat.id}
+                        onClick={() => handleSelectChat(chat.id)}
+                        className={`group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all ${
+                          chat.id === activeChatId
+                            ? "bg-slate-800 text-indigo-400 border border-slate-700"
+                            : "text-slate-400 hover:text-slate-200 hover:bg-slate-950/60"
+                        }`}
+                      >
+                        <span className="truncate flex-1">{chat.title}</span>
+                        {mentorChats.length > 1 && (
+                          <button
+                            onClick={(e) => handleDeleteChat(e, chat.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:text-rose-400 transition-opacity"
+                            title="Delete chat"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {mentorFileName && (
-                  <span className="text-xs bg-indigo-500/10 text-indigo-400 px-2.5 py-1 rounded-full border border-indigo-500/20 flex items-center gap-1">
-                    <FileCode className="w-3.5 h-3.5" /> {mentorFileName}
-                  </span>
-                )}
+                <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 text-center">
+                  Saved locally in browser
+                </div>
               </div>
 
-              <div className="flex-1 p-5 overflow-y-auto space-y-4">
-                {chatMessages.map((msg, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div 
-                      className={`max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed ${
-                        msg.sender === "user" 
-                          ? "bg-indigo-600 text-white rounded-br-none shadow-md font-sans" 
-                          : "bg-slate-950 border border-slate-800/90 text-slate-100 rounded-bl-none shadow-lg font-sans whitespace-pre-wrap selection:bg-indigo-500"
-                      }`}
-                    >
-                      {msg.text}
+              {/* Main Chat Interface */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col lg:col-span-3 overflow-hidden shadow-xl">
+                <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">
+                      <Bot className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">{currentChat?.title || "AI Mentor"}</h3>
+                      <p className="text-xs text-emerald-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span> Multi-modal Active • Clear English Output
+                      </p>
                     </div>
                   </div>
-                ))}
-                <div ref={chatEndRef} />
+
+                  {mentorFileName && (
+                    <span className="text-xs bg-indigo-500/10 text-indigo-400 px-2.5 py-1 rounded-full border border-indigo-500/20 flex items-center gap-1">
+                      <FileCode className="w-3.5 h-3.5" /> {mentorFileName}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1 p-5 overflow-y-auto space-y-4">
+                  {chatMessages.map((msg, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div 
+                        className={`max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed ${
+                          msg.sender === "user" 
+                            ? "bg-indigo-600 text-white rounded-br-none shadow-md font-sans" 
+                            : "bg-slate-950 border border-slate-800/90 text-slate-100 rounded-bl-none shadow-lg font-sans whitespace-pre-wrap selection:bg-indigo-500"
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+
+                <div className="px-4 py-2 bg-slate-950/40 border-t border-slate-800/60 flex gap-2 overflow-x-auto text-xs">
+                  <button 
+                    onClick={() => setMentorInput("Explain Lagrange Mean Value Theorem (LMVT) with a step-by-step example")} 
+                    className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap cursor-pointer transition-colors"
+                  >
+                    LMVT Theorem
+                  </button>
+                  <button 
+                    onClick={() => setMentorInput("Explain this problem step by step with clear calculations")} 
+                    className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap cursor-pointer transition-colors"
+                  >
+                    Step-by-Step Solution
+                  </button>
+                  <button 
+                    onClick={() => setMentorInput("Explain Newton's Laws of Motion with formulas and everyday examples")} 
+                    className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap cursor-pointer transition-colors"
+                  >
+                    Newton's Laws
+                  </button>
+                </div>
+
+                <form onSubmit={handleSendChatMessage} className="p-3 bg-slate-950/90 border-t border-slate-800 flex items-center gap-2">
+                  <input
+                    type="file"
+                    id="mentorFile"
+                    className="hidden"
+                    onChange={handleMentorFileUpload}
+                    accept="image/*,.pdf,.txt,.js,.py,.cpp,.html"
+                  />
+                  <label 
+                    htmlFor="mentorFile" 
+                    className="p-2.5 bg-slate-900 border border-slate-800 hover:border-indigo-500 rounded-xl text-slate-400 hover:text-indigo-400 cursor-pointer transition-colors"
+                    title="Attach image or problem file"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </label>
+
+                  <input
+                    type="text"
+                    value={mentorInput}
+                    onChange={(e) => setMentorInput(e.target.value)}
+                    placeholder="Ask a question or attach a problem file (English)..."
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
+                  <button 
+                    type="submit"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-center transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </form>
               </div>
-
-              <div className="px-4 py-2 bg-slate-950/40 border-t border-slate-800/60 flex gap-2 overflow-x-auto text-xs">
-                <button 
-                  onClick={() => setMentorInput("Explain Lagrange Mean Value Theorem (LMVT) with a step-by-step example")} 
-                  className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap cursor-pointer transition-colors"
-                >
-                  LMVT Theorem
-                </button>
-                <button 
-                  onClick={() => setMentorInput("Explain this problem step by step with clear calculations")} 
-                  className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap cursor-pointer transition-colors"
-                >
-                  Step-by-Step Solution
-                </button>
-                <button 
-                  onClick={() => setMentorInput("Explain Newton's Laws of Motion with formulas and everyday examples")} 
-                  className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap cursor-pointer transition-colors"
-                >
-                  Newton's Laws
-                </button>
-              </div>
-
-              <form onSubmit={handleSendChatMessage} className="p-3 bg-slate-950/90 border-t border-slate-800 flex items-center gap-2">
-                <input
-                  type="file"
-                  id="mentorFile"
-                  className="hidden"
-                  onChange={handleMentorFileUpload}
-                  accept="image/*,.pdf,.txt,.js,.py,.cpp,.html"
-                />
-                <label 
-                  htmlFor="mentorFile" 
-                  className="p-2.5 bg-slate-900 border border-slate-800 hover:border-indigo-500 rounded-xl text-slate-400 hover:text-indigo-400 cursor-pointer transition-colors"
-                  title="Attach image or problem file"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </label>
-
-                <input
-                  type="text"
-                  value={mentorInput}
-                  onChange={(e) => setMentorInput(e.target.value)}
-                  placeholder="Ask a question or attach a problem file (English)..."
-                  className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
-                />
-                <button 
-                  type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-center transition-all"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
             </div>
           )}
 
