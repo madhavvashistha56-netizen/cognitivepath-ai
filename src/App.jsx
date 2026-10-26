@@ -403,9 +403,33 @@ STRICT RESPONSE RULES:
     const query = customNoteQuery.trim();
 
     try {
-      const systemPrompt = `You are a Senior Academic Professor and Elite Textbook Author. Your objective is to create exhaustive, multi-page, publication-grade academic revision notes for students. Write extensively without summarizing or skipping details. Never use backticks (\`\`\`).`;
+      const systemPrompt = `You are a Senior Academic Professor and Elite Legal/Textbook Author. Your objective is to create exhaustive, multi-page, publication-grade academic or legal revision notes for students. Write extensively without summarizing or skipping details. Never use backticks (\`\`\`).`;
 
-      const userPrompt = `Write a comprehensive, exhaustive, 4 to 5 page masterclass textbook chapter on: "${query}".
+      const isLaw = selectedSubject === "LLB / Law (Legal Studies)";
+
+      const userPrompt = isLaw 
+        ? `Write a comprehensive, exhaustive, 4 to 5 page masterclass legal chapter on: "${query}".
+Academic Target: ${selectedGrade} - ${selectedSubject}.
+
+MANDATORY RULES:
+1. Write in-depth paragraphs and complete detailed legal explanations for every subtopic.
+2. Structure the content strictly with:
+   - Legislative Intent & Statutory Provisions (Relevant Sections & Acts)
+   - Landmark Case Laws & Judicial Precedents (Case name, facts, and court ruling)
+   - Legal Principles & Doctrines
+   - Analytical Case Scenarios & Exam Answers
+3. Do NOT use backticks (\`\`\`). Keep formatting clean in plain English text.
+
+PROVIDE EXTENSIVE DETAIL UNDER ALL 8 SECTIONS:
+SECTION 1: INTRODUCTION & HISTORICAL EVOLUTION
+SECTION 2: CORE STATUTORY PROVISIONS & SECTIONS
+SECTION 3: LANDMARK CASE LAWS & JUDICIAL INTERPRETATIONS
+SECTION 4: LEGAL DOCTRINES & THEORETICAL FRAMEWORK
+SECTION 5: PRACTICAL APPLICATIONS & REAL-WORLD SCENARIOS
+SECTION 6: LEGISLATIVE GAPS & CRITICAL ANALYSIS
+SECTION 7: COMMON PITFALLS IN LEGAL DRAFTING & EXAMS
+SECTION 8: HIGH-YIELD EXAM QUESTION BANK (WITH MOOT COURT STYLE MODEL ANSWERS)`
+        : `Write a comprehensive, exhaustive, 4 to 5 page masterclass textbook chapter on: "${query}".
 Academic Target: ${selectedGrade} - ${selectedSubject}.
 
 MANDATORY RULES:
@@ -1114,6 +1138,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
                       <option value="English Literature">English Literature</option>
                       <option value="Economics / Accountancy">Economics / Accountancy</option>
                       <option value="Engineering & Data Science">Engineering & Data Science</option>
+                      <option value="LLB / Law (Legal Studies)">LLB / Law (Legal Studies)</option>
                     </select>
                   </div>
 
@@ -1124,7 +1149,7 @@ SECTION 8: HIGH-YIELD EXAM QUESTION BANK
                         type="text"
                         value={customNoteQuery}
                         onChange={(e) => setCustomNoteQuery(e.target.value)}
-                        placeholder="e.g. Mole concept, Newton's laws of motion, Photosynthesis..."
+                        placeholder="e.g. Mole concept, Newton's laws of motion, Constitutional Law..."
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
                       />
                     </div>
